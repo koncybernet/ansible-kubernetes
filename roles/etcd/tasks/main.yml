@@ -1,0 +1,43 @@
+---
+- name: Install yum packages
+  yum: name={{ item }} state=present enablerepo=virt7-docker-common-release
+  ignore_errors: no
+  with_items:
+   - etcd
+
+- name: Create etcd config file
+  template:
+    src=roles/etcd/templates/etcd.j2
+    dest=/etc/etcd/etcd.conf
+
+- name: Enable etc
+  service: name=etcd state=started enabled=yes
+  async: 1000
+  poll: 0
+
+- name: Wait for etcd to be up
+  shell: etcdctl cluster-health
+  register: statuscheck
+  until: statuscheck.rc == 0
+  retries: 30
+  delay: 2
+  when: "inventory_hostname  ==  k8s_nodes[-1].hostname "
+
+- name: Create etcd network dir
+  command: etcdctl mkdir /kube-centos/network
+  register: etcdmkdir
+  ignore_errors: yes
+  when: "inventory_hostname  ==  k8s_nodes[-1].hostname "
+
+- name: Create etcd network dir
+  command: 'etcdctl mk /kube-centos/network/config "{ \"Network\": \"172.30.0.0/16\", \"SubnetLen\": 24, \"Backend\": { \"Type\": \"vxlan\" } }"'
+  register: etcdmk
+  ignore_errors: yes
+  when: "inventory_hostname  ==  k8s_nodes[-1].hostname "
+
+- name: Confirm that key exist on nodes
+  shell: curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:2379/v2/keys/kube-centos/network/config
+  register: result
+  until: result.stdout.find("200") != -1
+  retries: 4
+  delay: 2

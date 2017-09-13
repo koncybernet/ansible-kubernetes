@@ -1,0 +1,7 @@
+KUBE_ETCD_SERVERS="--etcd-servers={% for node in k8s_nodes %}{{ node.hostname }}=http://{{ node.ip }}:2379{% if not loop.last %},{% endif %}{% endfor %}"
+KUBE_LOGTOSTDERR="--logtostderr=true"
+KUBE_LOG_LEVEL="--v=0"
+KUBE_ALLOW_PRIV="--allow-privileged=false"
+KUBE_MASTER="--master=http://127.0.0.1:8080"
+KUBE_SCHEDULER_ARGS="--leader-elect=true"
+KUBE_API_ARGS="--leader-elect=true"

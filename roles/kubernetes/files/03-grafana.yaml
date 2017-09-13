@@ -1,0 +1,141 @@
+---
+ 
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: influxdb-config
+  namespace: llama2-infra
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 512M
+ 
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: influxdb-data
+  namespace: llama2-infra
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1024G
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-config
+  namespace: llama2-infra
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 128M
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: llama2-infra
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128M
+
+---
+
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: grafana
+  labels:
+    name: grafana
+  namespace: llama2-infra
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: grafana
+    spec:
+      containers:
+      - name: influxdb
+        image: influxdb:1.1.4
+        ports:
+        - name: idb-api
+          containerPort: 8086
+        - name: idb-admin
+          containerPort: 8083
+        - name: idb-collectd
+          containerPort: 25826
+          protocol: UDP
+        volumeMounts:
+        - mountPath: /etc/influxdb
+          name: influxdb-config
+        - mountPath: /var/lib/influxdb
+          name: influxdb-data
+      - name: grafana
+        image: grafana/grafana:4.0.2
+        ports:
+        - name: grafana
+          containerPort: 3001
+        volumeMounts:
+        - mountPath: /etc/grafana/
+          name: config
+        - mountPath: /var/lib/grafana
+          name: data
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: grafana-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: grafana-data
+      - name: influxdb-config
+        persistentVolumeClaim:
+          claimName: influxdb-config
+      - name: influxdb-data
+        persistentVolumeClaim:
+          claimName: influxdb-data
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-instance
+  labels:
+    name: grafana-instance
+  namespace: llama2-infra
+spec:
+  externalIPs:
+    - 135.121.116.116
+    - 135.121.116.117
+    - 135.121.116.118
+  ports:
+  - port: 3001  # The port visible on the private net.
+    targetPort: 3001   # the port that will be reached in the pod
+    name: port3001
+  - port: 8086  # The port visible on the private net.
+    targetPort: 8086  # the port that will be reached in the pod
+    name: port8086
+  - port: 8083  # The port visible on the private net.
+    targetPort: 8083   # the port that will be reached in the pod
+    name: port8083
+  - port: 25826  # The port visible on the private net.
+    targetPort: 25826   # the port that will be reached in the pod
+    name: port25826
+    protocol: UDP
+  selector:
+    name: grafana

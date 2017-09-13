@@ -1,0 +1,140 @@
+---
+- name: Create kube group
+  group: name=kube state=present
+
+- name: Create kube user
+  user: name=kube group=kube shell=/sbin/nologin state=present
+
+- name: Stop kubelet
+  ignore_errors: yes
+  service: name=kubelet state=stoped
+
+- name: Stop kube-proxy
+  ignore_errors: yes
+  service: name=kube-proxy state=stoped
+
+- name: Stop kube-apiserver
+  ignore_errors: yes
+  service: name=kube-apiserver state=stoped
+
+- name: Stop kube-controller-manager
+  ignore_errors: yes
+  service: name=kube-controller-manager state=stoped
+
+- name: Stop kube-scheduler
+  ignore_errors: yes
+  service: name=kube-scheduler state=stoped
+
+- name: Creates k8s var directory
+  file: path=/var/run/kubernetes state=directory owner=root group=kube mode=0770
+
+- name: Creates k8s directories
+  file: path={{ item }} state=directory
+  with_items:
+    - /etc/kubernetes
+    - /var/lib/kubelet  
+
+
+- name: Copy service files
+  copy: src={{ item }} dest=/usr/lib/systemd/system/ force=yes
+  with_fileglob:
+    - roles/kubernetes/files/*.service
+
+- name: Copy binary files
+  copy: src={{ item }} dest=/usr/bin/ force=yes mode=0774 owner=root group=kube
+  with_items:
+    - roles/kubernetes/files/kube-apiserver
+    - roles/kubernetes/files/kube-controller-manager
+    - roles/kubernetes/files/kubectl
+    - roles/kubernetes/files/kubelet
+    - roles/kubernetes/files/kube-proxy
+    - roles/kubernetes/files/kube-scheduler
+
+- name: Install yum packages
+  yum: name={{ item }} state=present enablerepo=virt7-docker-common-release
+  ignore_errors: no
+  with_items:
+   - flannel
+
+- name: Create k8s config file
+  template:
+    src=roles/kubernetes/templates/config.j2
+    dest=/etc/kubernetes/config
+
+- name: Create k8s proxy file
+  template:
+    src=roles/kubernetes/templates/proxy.j2
+    dest=/etc/kubernetes/proxy
+
+- name: Create k8s scheduler file
+  template:
+    src=roles/kubernetes/templates/scheduler.j2
+    dest=/etc/kubernetes/scheduler
+
+- name: Create k8s kubelet file
+  template:
+    src=roles/kubernetes/templates/kubelet.j2
+    dest=/etc/kubernetes/kubelet
+
+- name: Create k8s controller-manager file
+  template:
+    src=roles/kubernetes/templates/controller-manager.j2
+    dest=/etc/kubernetes/controller-manager
+
+- name: Create k8s apiserver file
+  template:
+    src=roles/kubernetes/templates/apiserver.j2
+    dest=/etc/kubernetes/apiserver
+
+- name: Create flanneld config file
+  template:
+    src=roles/kubernetes/templates/flanneld.j2
+    dest=/etc/sysconfig/flanneld
+
+- name: Enable flanneld
+  service: name=flanneld state=restarted enabled=yes
+
+- name: Enable kubelet
+  systemd: name=kubelet state=restarted enabled=yes daemon_reload=yes
+
+- name: Enable kube-proxy
+  systemd: name=kube-proxy state=restarted enabled=yes
+
+- name: Enable kube-apiserver
+  systemd: name=kube-apiserver state=restarted enabled=yes
+
+- name: Enable kube-controller-manager
+  systemd: name=kube-controller-manager state=restarted enabled=yes
+
+- name: Enable kube-scheduler
+  systemd: name=kube-scheduler state=restarted enabled=yes
+
+- name: Config default cluster
+  command: kubectl config set-cluster default-cluster --server=http://{{ ansible_host }}:8080
+  when: "inventory_hostname  ==  k8s_nodes[0].hostname "
+
+- name: Config default context
+  command: kubectl config set-context default-context --cluster=default-cluster --user=default-admin
+  when: "inventory_hostname  ==  k8s_nodes[0].hostname "
+
+- name: Use default context
+  command: kubectl config use-context default-context
+  when: "inventory_hostname  ==  k8s_nodes[0].hostname "
+
+- name: Make all masters working nodes
+  command: kubectl taint nodes --all dedicated-
+  when: "inventory_hostname  ==  k8s_nodes[0].hostname "
+  ignore_errors: yes
+
+- name: Creates pods directory
+  file: path=/root/pods state=directory
+
+#- name: Copy pods files
+#  copy: src={{ item }} dest=/root/pods/ force=yes
+#  with_fileglob:
+#    - roles/kubernetes/files/*
+
+- name: Copy test pod
+  template:
+    src=roles/kubernetes/templates/test.yaml
+    dest=/root/pods

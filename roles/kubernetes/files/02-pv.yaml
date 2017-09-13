@@ -1,0 +1,95 @@
+---  
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: influxdb-config
+  namespace: llama2-infra
+spec:
+  capacity:
+    storage: 512M
+  accessModes:
+  - ReadOnlyMany
+  rbd:
+    monitors:
+      - 199.16.254.208
+      - 199.16.254.216
+      - 199.16.254.217
+    pool: infra
+    image: influxdb-config
+    user: dumais
+    keyring: "/etc/ceph/ceph.client.dumais.keyring"
+    fsType: ext4
+    readOnly: true
+ 
+ 
+---
+
+kind: PersistentVolume
+metadata:
+  name: influxdb-data
+  namespace: llama2-infra
+spec:
+  capacity:
+    storage: 1024G
+  accessModes:
+  - ReadWriteOnce
+  rbd:
+    monitors:
+      - 199.16.254.208
+      - 199.16.254.216
+      - 199.16.254.217
+    pool: infra
+    image: influxdb-data
+    user: dumais
+    keyring: "/etc/ceph/ceph.client.dumais.keyring"
+    fsType: xfs
+    readOnly: false
+
+
+---
+
+kind: PersistentVolume
+metadata:
+  name: grafana-config
+  namespace: llama2-infra
+spec:
+  capacity:
+    storage: 128M
+  accessModes:
+  - ReadOnlyMany
+  rbd:
+    monitors:
+      - 199.16.254.208
+      - 199.16.254.216
+      - 199.16.254.217
+    pool: infra
+    image: grafana-config
+    user: dumais
+    keyring: "/etc/ceph/ceph.client.dumais.keyring"
+    fsType: ext4
+    readOnly: true
+
+
+---
+
+kind: PersistentVolume
+metadata:
+  name: grafana-data
+  namespace: llama2-infra
+spec:
+  capacity:
+    storage: 128M
+  accessModes:
+  - ReadWriteOnce
+  rbd:
+    monitors:
+      - 199.16.254.208
+      - 199.16.254.216
+      - 199.16.254.217
+    pool: infra
+    image: grafana-data
+    user: dumais
+    keyring: "/etc/ceph/ceph.client.dumais.keyring"
+    fsType: ext4
+    readOnly: false
+

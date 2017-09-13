@@ -1,0 +1,7 @@
+---
+- name: Create Nodes List
+  add_host: 
+    name: "{{ item.hostname }}"
+    groups: nodes
+    ansible_host: "{{ item.ip }}"
+  with_items: "{{ k8s_nodes }}"

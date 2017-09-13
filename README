@@ -1,0 +1,12 @@
+This will install kubernetes and any other required software (i.e. Etcd) on centos 7.
+Each servers will be master AND worker node though. 
+
+You first need to get the binary files from github (https://github.com/kubernetes/kubernetes/releases). Then unpack and copy
+    tar -zxf kubernetes.tar.gz
+    cd kubernetes
+    cluster/get-kube-binaries.sh
+    cd server
+    tar -zxf kubernetes-server-linux-amd64.tar.gz
+Then copy kube-apiserver, kube-controller-manager, kubectl, kubelet, kube-proxy, kube-scheduler to roles/kubernetes/files
+Change the variables in group_vars/all and then just run "ansible-playbook k8s.yml"
+

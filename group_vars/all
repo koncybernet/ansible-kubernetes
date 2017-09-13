@@ -1,0 +1,9 @@
+---
+k8s_nodes:
+  - hostname: k1 
+    ip: 192.168.242.6
+  - hostname: k2
+    ip: 192.168.242.13
+  - hostname: k3
+    ip: 192.168.242.5
+#corp_proxy: http://proxy.corp.com:8080

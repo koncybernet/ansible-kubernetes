@@ -1,0 +1,16 @@
+- hosts: localhost
+  roles:
+  - nodeslist
+
+- hosts: nodes
+  roles:
+  - base_system
+
+- hosts: nodes
+  roles:
+  - etcd
+
+- hosts: nodes
+  roles:
+  - kubernetes
+

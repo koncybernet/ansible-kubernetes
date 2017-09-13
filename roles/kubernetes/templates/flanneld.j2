@@ -1,0 +1,2 @@
+FLANNEL_ETCD_ENDPOINTS="{% for node in k8s_nodes %}http://{{ node.ip }}:2379{% if not loop.last %},{% endif %}{% endfor %}"
+FLANNEL_ETCD_PREFIX="/kube-centos/network"

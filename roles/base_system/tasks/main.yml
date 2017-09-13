@@ -1,0 +1,39 @@
+---
+- name: Pre-req
+  yum: name=libselinux-python state=present
+
+- name: Disable SELINUX
+  selinux: policy=targeted state=disabled
+
+- name: Disable firewall
+  service: name=firewalld state=stopped enabled=no
+  ignore_errors: yes
+
+- name: Disable NetworkManager
+  service: name=NetworkManager state=stopped enabled=no
+  ignore_errors: yes
+
+- name: Setup hostname
+  hostname: name={{ inventory_hostname }}
+
+- name: Copy k8s repos to servers
+  template: src=roles/base_system/templates/virt7-docker-common-release.repo.j2 dest=/etc/yum.repos.d/virt7-docker-common-release.repo
+
+- name: Install yum packages
+  yum: name={{ item }} state=present
+  ignore_errors: no
+  with_items:
+   - docker
+   - tcpdump
+   - telnet
+
+- name: Add proxy in docker config
+  lineinfile:
+      dest=/etc/sysconfig/docker
+      regexp=^HTTP_PROXY=
+      line=HTTP_PROXY={{ corp_proxy }}
+      state=present
+  when: corp_proxy is defined
+
+- name: Enable docker
+  service: name=docker state=started enabled=yes
