@@ -8,6 +8,9 @@ After=etcd.service
 EnvironmentFile=-/etc/kubernetes/config
 EnvironmentFile=-/etc/kubernetes/apiserver
 User=kube
+PermissionsStartOnly=true
+ExecStartPre=/usr/bin/mkdir -p /var/run/kubernetes
+ExecStartPre=/usr/bin/chown kube:kube /var/run/kubernetes -R
 ExecStart=/usr/bin/kube-apiserver \
 	    $KUBE_LOGTOSTDERR \
 	    $KUBE_LOG_LEVEL \
